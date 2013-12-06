@@ -38,7 +38,7 @@ public class HBaseUtils {
 	}
 
 	// 创建表
-	public static void createTable(String tableName) {
+	public static void createTable(String tableName, String[] columnFamily) {
 		System.out.println("start create table ...");
 		try {
 			hAdmin = new HBaseAdmin(conf);
@@ -48,29 +48,48 @@ public class HBaseUtils {
 				System.out.println(tableName + " is exist,delete ...");
 			}
 			HTableDescriptor hTableDescriptor = new HTableDescriptor(tableName);
-			hTableDescriptor.addFamily(new HColumnDescriptor("col1"));
-			hTableDescriptor.addFamily(new HColumnDescriptor("col2"));
-			hTableDescriptor.addFamily(new HColumnDescriptor("col3"));
+			for (String col : columnFamily) {
+				HColumnDescriptor hColDesc = new HColumnDescriptor(col);// 列族名
+				hTableDescriptor.addFamily(hColDesc);
+			}
 			hAdmin.createTable(hTableDescriptor);
 		} catch (Exception e) {
 			e.printStackTrace();
+			return;
 		}
 		System.out.println("end create table ...");
 	}
 
-	// 插入数据
-	public static void insertData(String tableName) {
+	// 插入一条数据
+	public static void insertData(String tableName, String rowKey,
+			String columnFamily, String column, String value) {
 		System.out.println("start insert data ...");
 		try {
 			tbl = new HTable(conf, tableName);
-			Put put = new Put("smartlab411".getBytes());// 行键唯一
-			put.add("col1".getBytes(), null, "aaa".getBytes());// 第1列
-			put.add("col2".getBytes(), null, "bbb".getBytes());// 第2列
-			put.add("col3".getBytes(), null, "ccc".getBytes());// 第3列
+			Put put = new Put(Bytes.toBytes(rowKey));// 行键唯一
+			// 参数分别为：列族，列，值
+			put.add(Bytes.toBytes(columnFamily), Bytes.toBytes(column),
+					Bytes.toBytes(value));
 			tbl.put(put);
 			tbl.close();
 		} catch (Exception e) {
 			e.printStackTrace();
+			return;
+		}
+		System.out.println("success!!! end insert data ...");
+	}
+
+	// 插入多条数据
+	public static void insertData(String tableName, ArrayList<Put> alists) {
+		System.out.println("start insert data ...");
+		try {
+			tbl = new HTable(conf, tableName);
+			System.out.println("put size is : " + alists.size());
+			tbl.put(alists);
+			tbl.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+			return;
 		}
 		System.out.println("success!!! end insert data ...");
 	}
@@ -79,11 +98,12 @@ public class HBaseUtils {
 	public static void deleteData(String tableName, String rowKey) {
 		try {
 			tbl = new HTable(conf, tableName);
-			Delete del = new Delete(rowKey.getBytes());
+			Delete del = new Delete(Bytes.toBytes(rowKey));
 			tbl.delete(del);
 			tbl.close();
 		} catch (Exception e) {
 			e.printStackTrace();
+			return;
 		}
 		System.out.println("delete finish!!!");
 	}
@@ -94,13 +114,14 @@ public class HBaseUtils {
 			tbl = new HTable(conf, tableName);
 			ArrayList<Delete> alist = new ArrayList<Delete>();
 			for (String key : rowKey) {
-				Delete del = new Delete(key.getBytes());
+				Delete del = new Delete(Bytes.toBytes(key));
 				alist.add(del);
 			}
 			tbl.delete(alist);
 			tbl.close();
 		} catch (Exception e) {
 			e.printStackTrace();
+			return;
 		}
 		System.out.println("delete alist finish!!!");
 	}
@@ -109,7 +130,7 @@ public class HBaseUtils {
 	public static void getDate(String tableName, String rowKey) {
 		try {
 			tbl = new HTable(conf, tableName);
-			Get get = new Get(rowKey.getBytes());
+			Get get = new Get(Bytes.toBytes(rowKey));
 			Result rs = tbl.get(get);
 			for (KeyValue k : rs.raw()) {
 				System.out.println("rowKey: "
@@ -124,6 +145,7 @@ public class HBaseUtils {
 			tbl.close();
 		} catch (Exception e) {
 			e.printStackTrace();
+			return;
 		}
 	}
 
@@ -150,6 +172,7 @@ public class HBaseUtils {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
+			return;
 		}
 	}
 }
